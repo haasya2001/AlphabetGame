@@ -18,9 +18,14 @@
             border: 1px solid #ddd;
             border-radius: 5px;
         }
-        #letter-display {
+        #word-display, #letter-display {
             margin-top: 20px;
             font-size: 24px;
+        }
+        #word-history {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e0e0e0;
         }
     </style>
 </head>
@@ -36,17 +41,36 @@
     <div id="players-list">
         <h2>Players:</h2>
         <div>
-            <!-- Display players dynamically -->
             {% for player in players %}
                 <div class="player">{{ player.name }} ({{ player.role }})</div>
             {% endfor %}
         </div>
     </div>
 
-    <!-- Button to Generate Letter (Only for Player 1) -->
-    <button onclick="generateLetter()" id="generate-btn" disabled>Generate Random Letter</button>
+    <!-- Random Letter Display -->
+    <div id="letter-display">
+        {% if current_letter %}
+            Current Letter: {{ current_letter }}
+        {% else %}
+            Current Letter: Not generated yet
+        {% endif %}
+    </div>
 
-    <div id="letter-display"></div>
+    <!-- Word Input for Players -->
+    <div id="word-display">
+        <input type="text" id="word-input" placeholder="Enter a word" />
+        <button onclick="submitWord()">Submit Word</button>
+    </div>
+
+    <!-- Word History -->
+    <div id="word-history">
+        <h3>Word History:</h3>
+        <ul>
+            {% for word in word_history %}
+                <li>{{ word }}</li>
+            {% endfor %}
+        </ul>
+    </div>
 
     <script>
         let playerName = null;
@@ -65,13 +89,9 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.message.includes('joined')) {
-                    alert(data.message);
-                    updatePlayersList();
-                    enableGenerateButton();
-                } else {
-                    alert(data.message);
-                }
+                alert(data.message);
+                updatePlayersList();
+                enableGenerateButton();
             })
             .catch(error => alert('Error joining the game.'));
         }
@@ -85,13 +105,9 @@
         }
 
         function enableGenerateButton() {
-            fetch('/')
-            .then(response => response.json())
-            .then(data => {
-                if (data.players.length > 0 && data.players[0].name === playerName) {
-                    document.getElementById('generate-btn').disabled = false;
-                }
-            });
+            if (players.length >= 2) {
+                document.getElementById('generate-btn').disabled = false;
+            }
         }
 
         function generateLetter() {
@@ -103,12 +119,35 @@
             .then(response => response.json())
             .then(data => {
                 if (data.letter) {
-                    document.getElementById('letter-display').innerText = `Random Letter: ${data.letter}`;
+                    document.getElementById('letter-display').innerText = `Current Letter: ${data.letter}`;
                 } else if (data.error) {
                     alert(data.error);
                 }
             })
             .catch(error => alert('Error generating letter.'));
+        }
+
+        function submitWord() {
+            const word = document.getElementById('word-input').value;
+            if (!word) {
+                alert('Please enter a word.');
+                return;
+            }
+
+            fetch('/submit_word', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: playerName, word: word })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    updatePlayersList();
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(error => alert('Error submitting word.'));
         }
     </script>
 
