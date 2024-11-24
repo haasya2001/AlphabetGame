@@ -3,4 +3,6 @@ gunicorn==20.1.0
 Flask-SocketIO==5.3.4
 python-socketio==5.8.0
 python-engineio==4.5.0
+eventlet==0.33.0
+dnspython==2.2.1
 eventlet==0.33.0  # Optional, only needed for WebSocket support
