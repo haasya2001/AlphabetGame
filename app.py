@@ -1,16 +1,16 @@
-from flask import Flask, render_template, request
-import random
+from flask import Flask, render_template, request, jsonify
+
 app = Flask(__name__)
 
 # Game state
 game_data = {
     'player1': '',
     'player2': '',
-    'player3': '',
+    'player3': ''
 }
-
 current_player = 1
 current_letter = ''
+word_history = []
 
 @app.route('/')
 def index():
@@ -22,19 +22,19 @@ def generate_letter():
     from random import choice
     letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     current_letter = choice(letters)
-    return {'letter': current_letter}
+    return jsonify({'letter': current_letter})
 
 @app.route('/submit_word', methods=['POST'])
 def submit_word():
-    global current_player
+    global current_player, word_history
     word = request.json.get('word')
     
     if word and word[0].upper() == current_letter:
-        game_data[f'player{current_player}'] = word
-        current_player = (current_player % 3) + 1  # Switch between 1, 2, 3
-        return {'message': f'Player {current_player} played: {word}. Now it\'s Player {current_player}\'s turn.'}
+        word_history.append(f'Player {current_player}: {word}')
+        current_player = (current_player % 3) + 1  # Switch between players
+        return jsonify({'message': f'Player {current_player} played: {word}. Now it\'s Player {current_player}\'s turn.'})
     else:
-        return {'message': f'Please enter a word starting with {current_letter}.'}, 400
+        return jsonify({'message': f'Please enter a word starting with {current_letter}.'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
