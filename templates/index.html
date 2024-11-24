@@ -4,58 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alphabet Game</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
-<body class="bg-light text-center p-3">
-    <div class="container">
-        <h1>Alphabet Game</h1>
-        <div class="my-4">
-            <button id="generateLetter" class="btn btn-primary">Generate Letter</button>
-            <h2 id="currentLetter" class="my-3"></h2>
-        </div>
-        <div>
-            <h3 id="turn">Turn: Player 1</h3>
-            <input type="text" id="wordInput" class="form-control my-2" placeholder="Enter your word">
-            <button id="submitWord" class="btn btn-success">Submit Word</button>
-        </div>
-        <div id="history" class="mt-4">
-            <h4>History</h4>
-            <ul class="list-group" id="historyList"></ul>
-        </div>
+<body>
+    <h1>Alphabet Game</h1>
+    
+    <!-- Player Selection -->
+    <div id="playerSelection">
+        <h3>Select Player:</h3>
+        <button onclick="selectPlayer(1)">Player 1</button>
+        <button onclick="selectPlayer(2)">Player 2</button>
+        <button onclick="selectPlayer(3)">Player 3</button>
+    </div>
+
+    <!-- Random Letter Button -->
+    <button onclick="generateLetter()" id="generateButton" style="display:none;">Generate Random Letter</button>
+
+    <!-- Display the Letter and Game Instructions -->
+    <h3 id="letterDisplay" style="display:none;">Letter: </h3>
+    <div id="wordInput" style="display:none;">
+        <h4>Enter a word that starts with the letter:</h4>
+        <input type="text" id="wordInputField" placeholder="Enter word" required>
+        <button onclick="submitWord()">Submit Word</button>
+    </div>
+
+    <!-- Game Status -->
+    <div id="gameStatus" style="display:none;">
+        <h4>Waiting for other players...</h4>
     </div>
 
     <script>
-        document.getElementById("generateLetter").addEventListener("click", () => {
-            axios.post("/generate-letter")
-                .then(response => {
-                    const letter = response.data.letter;
-                    document.getElementById("currentLetter").innerText = `Letter: ${letter}`;
-                    document.getElementById("wordInput").value = "";
-                })
-                .catch(err => console.error(err));
-        });
+        let currentPlayer = null;
+        let currentLetter = '';
+        let gameStarted = false;
+        let gameData = {
+            player1: '',
+            player2: '',
+            player3: ''
+        };
 
-        document.getElementById("submitWord").addEventListener("click", () => {
-            const word = document.getElementById("wordInput").value.trim();
-            axios.post("/submit-word", { word })
-                .then(response => {
-                    const nextPlayer = response.data.next_player;
-                    const history = response.data.history;
-                    document.getElementById("turn").innerText = `Turn: ${nextPlayer}`;
-                    document.getElementById("historyList").innerHTML = history
-                        .map(item => `<li class="list-group-item">${item.player}: ${item.word}</li>`)
-                        .join("");
-                    document.getElementById("wordInput").value = "";
-                })
-                .catch(err => {
-                    if (err.response && err.response.data.error) {
-                        alert(err.response.data.error);
-                    } else {
-                        console.error(err);
-                    }
-                });
-        });
+        function selectPlayer(player) {
+            currentPlayer = player;
+            document.getElementById('playerSelection').style.display = 'none';
+            document.getElementById('generateButton').style.display = 'inline-block';
+        }
+
+        function generateLetter() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            currentLetter = letters.charAt(Math.floor(Math.random() * letters.length));
+            document.getElementById('letterDisplay').textContent = 'Letter: ' + currentLetter;
+            document.getElementById('letterDisplay').style.display = 'block';
+            document.getElementById('wordInput').style.display = 'block';
+            document.getElementById('gameStatus').style.display = 'block';
+        }
+
+        function submitWord() {
+            const word = document.getElementById('wordInputField').value;
+            if (word.toUpperCase().startsWith(currentLetter)) {
+                gameData[`player${currentPlayer}`] = word;
+                // Update game status with player word
+                document.getElementById('gameStatus').innerHTML = `Player ${currentPlayer} played: ${word}. Now waiting for the next player.`;
+                document.getElementById('wordInputField').value = '';
+                
+                // Move to next player
+                currentPlayer = (currentPlayer % 3) + 1; // Switch between 1, 2, 3
+                document.getElementById('gameStatus').innerHTML = `It's Player ${currentPlayer}'s turn.`;
+            } else {
+                alert(`Please enter a word starting with the letter ${currentLetter}.`);
+            }
+        }
     </script>
 </body>
 </html>
