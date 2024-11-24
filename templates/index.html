@@ -8,9 +8,16 @@
 <body>
     <h1>Alphabet Game</h1>
     
+    <!-- Player Name Input -->
+    <div id="playerInput">
+        <h3>Enter your name:</h3>
+        <input type="text" id="playerName" placeholder="Enter Name" required>
+        <button onclick="joinGame()">Join Game</button>
+    </div>
+
     <!-- Player Selection -->
-    <div id="playerSelection">
-        <h3>Select Player:</h3>
+    <div id="playerSelection" style="display:none;">
+        <h3>Select Player (2 or 3 players allowed):</h3>
         <button onclick="selectPlayer(1)">Player 1</button>
         <button onclick="selectPlayer(2)">Player 2</button>
         <button onclick="selectPlayer(3)">Player 3</button>
@@ -27,6 +34,18 @@
         <button onclick="submitWord()">Submit Word</button>
     </div>
 
+    <!-- Player Names Display -->
+    <div id="playerNames" style="display:none;">
+        <h4>Players:</h4>
+        <ul id="playerList"></ul>
+    </div>
+
+    <!-- History of Words -->
+    <div id="wordHistory" style="display:none;">
+        <h4>Word History:</h4>
+        <ul id="historyList"></ul>
+    </div>
+
     <!-- Game Status -->
     <div id="gameStatus" style="display:none;">
         <h4>Waiting for other players...</h4>
@@ -36,16 +55,51 @@
         let currentPlayer = null;
         let currentLetter = '';
         let gameStarted = false;
+        let playerCount = 0;
         let gameData = {
             player1: '',
             player2: '',
             player3: ''
         };
+        let wordHistory = [];
+
+        function joinGame() {
+            const playerName = document.getElementById('playerName').value;
+            if (playerName === '') {
+                alert('Please enter a name to join the game.');
+                return;
+            }
+
+            document.getElementById('playerInput').style.display = 'none';
+            document.getElementById('playerSelection').style.display = 'block';
+        }
 
         function selectPlayer(player) {
-            currentPlayer = player;
-            document.getElementById('playerSelection').style.display = 'none';
-            document.getElementById('generateButton').style.display = 'inline-block';
+            if (playerCount >= 3) {
+                alert("Only 3 players are allowed.");
+                return;
+            }
+
+            playerCount++;
+            gameData[`player${player}`] = document.getElementById('playerName').value;
+            updatePlayerNames();
+
+            if (playerCount === 3) {
+                document.getElementById('playerSelection').style.display = 'none';
+                document.getElementById('generateButton').style.display = 'inline-block';
+            }
+        }
+
+        function updatePlayerNames() {
+            const playerList = document.getElementById('playerList');
+            playerList.innerHTML = '';
+            for (let i = 1; i <= playerCount; i++) {
+                const listItem = document.createElement('li');
+                listItem.textContent = `Player ${i}: ${gameData[`player${i}`]}`;
+                playerList.appendChild(listItem);
+            }
+
+            document.getElementById('playerNames').style.display = 'block';
         }
 
         function generateLetter() {
@@ -55,22 +109,33 @@
             document.getElementById('letterDisplay').style.display = 'block';
             document.getElementById('wordInput').style.display = 'block';
             document.getElementById('gameStatus').style.display = 'block';
+            document.getElementById('wordHistory').style.display = 'block';
+            document.getElementById('gameStatus').textContent = 'It\'s Player 1\'s turn!';
+            currentPlayer = 1; // Player 1 starts
         }
 
         function submitWord() {
             const word = document.getElementById('wordInputField').value;
             if (word.toUpperCase().startsWith(currentLetter)) {
-                gameData[`player${currentPlayer}`] = word;
-                // Update game status with player word
-                document.getElementById('gameStatus').innerHTML = `Player ${currentPlayer} played: ${word}. Now waiting for the next player.`;
+                wordHistory.push(`${gameData[`player${currentPlayer}`]}: ${word}`);
+                updateWordHistory();
+
                 document.getElementById('wordInputField').value = '';
-                
-                // Move to next player
-                currentPlayer = (currentPlayer % 3) + 1; // Switch between 1, 2, 3
-                document.getElementById('gameStatus').innerHTML = `It's Player ${currentPlayer}'s turn.`;
+                currentPlayer = (currentPlayer % playerCount) + 1; // Switch between players
+                document.getElementById('gameStatus').textContent = `It's Player ${currentPlayer}'s turn.`;
             } else {
                 alert(`Please enter a word starting with the letter ${currentLetter}.`);
             }
+        }
+
+        function updateWordHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            wordHistory.forEach(word => {
+                const listItem = document.createElement('li');
+                listItem.textContent = word;
+                historyList.appendChild(listItem);
+            });
         }
     </script>
 </body>
