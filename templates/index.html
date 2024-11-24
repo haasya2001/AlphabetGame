@@ -1,120 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alphabet Game</title>
-    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Chain Game</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Alphabet Game</h1>
-
-    <!-- Player Name Input -->
-    <div id="joinGame">
-        <h3>Enter your name:</h3>
-        <input type="text" id="playerName" placeholder="Enter Name" required>
-        <button onclick="joinGame()">Join Game</button>
+  <div id="game-container">
+    <h1>Word Chain Game</h1>
+    <div id="game-panel">
+      <div class="info-box">
+        <strong>Current Letter:</strong> <span id="current-letter">-</span>
+      </div>
+      <div id="history">
+        <strong>Word History:</strong>
+        <ul id="word-list"></ul>
+      </div>
+      <input id="word-input" type="text" placeholder="Enter your word" />
+      <button id="submit-word">Submit Word</button>
+      <button id="generate-letter">Generate Random Letter</button>
+      <p id="error-message"></p>
     </div>
+  </div>
+  <footer>
+    <p>Word Chain Game &copy; 2024</p>
+  </footer>
 
-    <!-- Players List -->
-    <div id="players" style="display:none;">
-        <h3>Players:</h3>
-        <ul id="playerList"></ul>
-    </div>
-
-    <!-- Game Controls -->
-    <div id="gameControls" style="display:none;">
-        <button id="startGameButton" onclick="startGame()">Start Game</button>
-    </div>
-
-    <!-- Game Display -->
-    <div id="gameDisplay" style="display:none;">
-        <h3>Current Letter: <span id="currentLetter"></span></h3>
-        <h4>Current Turn: Player <span id="currentTurn"></span></h4>
-
-        <!-- Word Submission -->
-        <div id="wordInput">
-            <input type="text" id="wordField" placeholder="Enter word" required>
-            <button onclick="submitWord()">Submit Word</button>
-        </div>
-
-        <!-- Word History -->
-        <div id="wordHistory">
-            <h4>Word History:</h4>
-            <ul id="historyList"></ul>
-        </div>
-    </div>
-
-    <script>
-        const socket = io();
-
-        let playerId = null;
-
-        function joinGame() {
-            const playerName = document.getElementById('playerName').value;
-            if (!playerName) {
-                alert('Please enter a name to join the game.');
-                return;
-            }
-
-            playerId = Object.keys(socket.io.opts.query).length + 1; // Assign ID
-            socket.emit('join_game', { player_id: playerId, player_name: playerName });
-
-            document.getElementById('joinGame').style.display = 'none';
-        }
-
-        socket.on('update_players', (players) => {
-            const playerList = document.getElementById('playerList');
-            playerList.innerHTML = '';
-
-            for (let id in players) {
-                const listItem = document.createElement('li');
-                listItem.textContent = `Player ${id}: ${players[id]}`;
-                playerList.appendChild(listItem);
-            }
-
-            document.getElementById('players').style.display = 'block';
-
-            // Show Start Button if Player 1
-            if (playerId === 1) {
-                document.getElementById('gameControls').style.display = 'block';
-            }
-        });
-
-        function startGame() {
-            socket.emit('start_game');
-        }
-
-        socket.on('game_started', (data) => {
-            document.getElementById('currentLetter').textContent = data.current_letter;
-            document.getElementById('currentTurn').textContent = data.current_player;
-
-            document.getElementById('gameControls').style.display = 'none';
-            document.getElementById('gameDisplay').style.display = 'block';
-        });
-
-        function submitWord() {
-            const word = document.getElementById('wordField').value;
-            socket.emit('submit_word', { player_id: playerId, word: word });
-        }
-
-        socket.on('update_game', (data) => {
-            document.getElementById('currentLetter').textContent = data.current_letter;
-            document.getElementById('currentTurn').textContent = data.current_player;
-
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '';
-
-            data.word_history.forEach(word => {
-                const listItem = document.createElement('li');
-                listItem.textContent = word;
-                historyList.appendChild(listItem);
-            });
-        });
-
-        socket.on('invalid_word', (data) => {
-            alert(data.message);
-        });
-    </script>
+  <script src="/static/app.js"></script>
 </body>
 </html>
