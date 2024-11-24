@@ -1,41 +1,28 @@
-import tkinter as tk
-from tkinter import messagebox
+from flask import Flask, render_template, request, jsonify
+import random
 
-def select_player(player):
-    global current_player
-    current_player = player
-    if current_player == "Player1":
-        generate_button.config(state="normal")
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/select_player', methods=['POST'])
+def select_player():
+    player = request.json.get('player')
+    if player == "Player1":
+        return jsonify({"message": f"{player} selected. Ready to generate a letter."})
     else:
-        generate_button.config(state="disabled")
-    messagebox.showinfo("Player Selected", f"{current_player} selected.")
+        return jsonify({"message": f"{player} selected. Cannot generate a letter."})
 
-def generate_random_letter():
-    if current_player == "Player1":
-        random_letter.set(chr(random.randint(65, 90)))  # Generates a random uppercase letter
+@app.route('/generate_letter', methods=['POST'])
+def generate_letter():
+    player = request.json.get('player')
+    if player == "Player1":
+        random_letter = chr(random.randint(65, 90))  # Generates a random uppercase letter
+        return jsonify({"letter": random_letter})
     else:
-        messagebox.showwarning("Permission Denied", "Only Player1 can generate the random letter!")
+        return jsonify({"error": "Only Player1 can generate the letter!"}), 403
 
-# Initialize the GUI window
-root = tk.Tk()
-root.title("Player Selection Game")
-
-current_player = None  # Track the current player
-random_letter = tk.StringVar()
-
-# Create Player Selection Buttons
-player1_button = tk.Button(root, text="Player1", command=lambda: select_player("Player1"))
-player2_button = tk.Button(root, text="Player2", command=lambda: select_player("Player2"))
-player1_button.pack(pady=10)
-player2_button.pack(pady=10)
-
-# Create Random Letter Generation Button
-generate_button = tk.Button(root, text="Generate Random Letter", command=generate_random_letter, state="disabled")
-generate_button.pack(pady=20)
-
-# Display Random Letter
-letter_label = tk.Label(root, textvariable=random_letter, font=("Helvetica", 24))
-letter_label.pack(pady=20)
-
-# Run the main loop
-root.mainloop()
+if __name__ == '__main__':
+    app.run(debug=True)
