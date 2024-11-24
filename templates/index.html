@@ -1,30 +1,96 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Player Selection Game</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #players-list {
+            margin-top: 20px;
+        }
+        .player {
+            margin: 5px;
+            padding: 5px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #letter-display {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Select a Player</h1>
-    <button onclick="selectPlayer('Player1')">Player1</button>
-    <button onclick="selectPlayer('Player2')">Player2</button>
-    <div id="response"></div>
-    <button onclick="generateLetter()" id="generate-btn" disabled>Generate Letter</button>
-    <h2 id="letter-display"></h2>
+
+    <h1>Join the Game</h1>
+
+    <!-- Player Name Input -->
+    <input type="text" id="player-name" placeholder="Enter your name" />
+    <button onclick="joinGame()">Join Game</button>
+
+    <!-- List of Players -->
+    <div id="players-list">
+        <h2>Players:</h2>
+        <div>
+            <!-- Display players dynamically -->
+            {% for player in players %}
+                <div class="player">{{ player.name }} ({{ player.role }})</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Button to Generate Letter (Only for Player 1) -->
+    <button onclick="generateLetter()" id="generate-btn" disabled>Generate Random Letter</button>
+
+    <div id="letter-display"></div>
 
     <script>
-        let currentPlayer = null;
+        let playerName = null;
 
-        function selectPlayer(player) {
-            fetch('/select_player', {
+        function joinGame() {
+            playerName = document.getElementById('player-name').value;
+            if (!playerName) {
+                alert('Please enter your name.');
+                return;
+            }
+
+            fetch('/join_game', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ player: player })
+                body: JSON.stringify({ name: playerName })
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('response').innerText = data.message;
-                currentPlayer = player;
-                document.getElementById('generate-btn').disabled = player !== "Player1";
+                if (data.message.includes('joined')) {
+                    alert(data.message);
+                    updatePlayersList();
+                    enableGenerateButton();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => alert('Error joining the game.'));
+        }
+
+        function updatePlayersList() {
+            fetch('/')
+            .then(response => response.text())
+            .then(html => {
+                document.body.innerHTML = html;
+            });
+        }
+
+        function enableGenerateButton() {
+            fetch('/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.players.length > 0 && data.players[0].name === playerName) {
+                    document.getElementById('generate-btn').disabled = false;
+                }
             });
         }
 
@@ -32,21 +98,19 @@
             fetch('/generate_letter', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ player: currentPlayer })
+                body: JSON.stringify({ name: playerName })
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(data => { throw new Error(data.error); });
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                document.getElementById('letter-display').innerText = `Random Letter: ${data.letter}`;
+                if (data.letter) {
+                    document.getElementById('letter-display').innerText = `Random Letter: ${data.letter}`;
+                } else if (data.error) {
+                    alert(data.error);
+                }
             })
-            .catch(error => {
-                alert(error.message);
-            });
+            .catch(error => alert('Error generating letter.'));
         }
     </script>
+
 </body>
 </html>
