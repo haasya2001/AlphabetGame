@@ -1,41 +1,41 @@
-from flask import Flask, render_template, send_from_directory
-from flask_socketio import SocketIO, emit
-import random
-import string
+import tkinter as tk
+from tkinter import messagebox
 
-app = Flask(__name__)
-socketio = SocketIO(app)
-
-# Store game state
-game_state = {
-    "letter": "",  # Current letter
-    "history": []  # History of words
-}
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-@app.route("/static/<path:path>")
-def send_static(path):
-    return send_from_directory("static", path)
-
-@socketio.on("generate_letter")
-def generate_letter():
-    letter = random.choice(string.ascii_lowercase)
-    game_state["letter"] = letter
-    game_state["history"] = []  # Clear history for a new round
-    emit("new_letter", {"letter": letter, "history": []}, broadcast=True)
-
-@socketio.on("submit_word")
-def submit_word(data):
-    word = data.get("word", "").strip().lower()
-    if word and word[0] == game_state["letter"]:
-        game_state["history"].append(word)
-        game_state["letter"] = word[-1]  # Update the letter for the next turn
-        emit("update_game", {"letter": game_state["letter"], "history": game_state["history"]}, broadcast=True)
+def select_player(player):
+    global current_player
+    current_player = player
+    if current_player == "Player1":
+        generate_button.config(state="normal")
     else:
-        emit("invalid_word", {"message": f"Word must start with '{game_state['letter']}'"})
+        generate_button.config(state="disabled")
+    messagebox.showinfo("Player Selected", f"{current_player} selected.")
 
-if __name__ == "__main__":
-    socketio.run(app, debug=True, host="0.0.0.0", port=5000)
+def generate_random_letter():
+    if current_player == "Player1":
+        random_letter.set(chr(random.randint(65, 90)))  # Generates a random uppercase letter
+    else:
+        messagebox.showwarning("Permission Denied", "Only Player1 can generate the random letter!")
+
+# Initialize the GUI window
+root = tk.Tk()
+root.title("Player Selection Game")
+
+current_player = None  # Track the current player
+random_letter = tk.StringVar()
+
+# Create Player Selection Buttons
+player1_button = tk.Button(root, text="Player1", command=lambda: select_player("Player1"))
+player2_button = tk.Button(root, text="Player2", command=lambda: select_player("Player2"))
+player1_button.pack(pady=10)
+player2_button.pack(pady=10)
+
+# Create Random Letter Generation Button
+generate_button = tk.Button(root, text="Generate Random Letter", command=generate_random_letter, state="disabled")
+generate_button.pack(pady=20)
+
+# Display Random Letter
+letter_label = tk.Label(root, textvariable=random_letter, font=("Helvetica", 24))
+letter_label.pack(pady=20)
+
+# Run the main loop
+root.mainloop()
