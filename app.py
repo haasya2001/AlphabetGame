@@ -1,50 +1,40 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 import random
-
 app = Flask(__name__)
 
 # Game state
-game_state = {
-    "current_letter": "",
-    "last_letter": "",
-    "turn": 1,
-    "players": ["Player 1", "Player 2", "Player 3"],
-    "num_players": 2,  # Adjust for 2 or 3 players
-    "history": []
+game_data = {
+    'player1': '',
+    'player2': '',
+    'player3': '',
 }
 
-@app.route("/")
+current_player = 1
+current_letter = ''
+
+@app.route('/')
 def index():
-    return render_template("index.html")
+    return render_template('index.html')
 
-@app.route("/generate-letter", methods=["POST"])
+@app.route('/generate_letter', methods=['POST'])
 def generate_letter():
-    letter = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-    game_state["current_letter"] = letter
-    game_state["last_letter"] = ""
-    return jsonify({"letter": letter})
+    global current_letter
+    from random import choice
+    letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    current_letter = choice(letters)
+    return {'letter': current_letter}
 
-@app.route("/submit-word", methods=["POST"])
+@app.route('/submit_word', methods=['POST'])
 def submit_word():
-    word = request.json.get("word").strip()
-    if not word:
-        return jsonify({"error": "Please enter a word!"}), 400
+    global current_player
+    word = request.json.get('word')
+    
+    if word and word[0].upper() == current_letter:
+        game_data[f'player{current_player}'] = word
+        current_player = (current_player % 3) + 1  # Switch between 1, 2, 3
+        return {'message': f'Player {current_player} played: {word}. Now it\'s Player {current_player}\'s turn.'}
+    else:
+        return {'message': f'Please enter a word starting with {current_letter}.'}, 400
 
-    current_player = game_state["players"][game_state["turn"] - 1]
-    if game_state["last_letter"] and not word.startswith(game_state["last_letter"]):
-        return jsonify({"error": f"Word must start with '{game_state['last_letter']}'!"}), 400
-
-    if not game_state["last_letter"] and not word.startswith(game_state["current_letter"]):
-        return jsonify({"error": f"Word must start with the letter '{game_state['current_letter']}'!"}), 400
-
-    game_state["history"].append({"player": current_player, "word": word})
-    game_state["last_letter"] = word[-1].upper()
-    game_state["turn"] = (game_state["turn"] % game_state["num_players"]) + 1
-
-    return jsonify({
-        "next_player": game_state["players"][game_state["turn"] - 1],
-        "history": game_state["history"]
-    })
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
