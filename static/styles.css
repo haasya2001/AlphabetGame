@@ -1,0 +1,82 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f7f7f7;
+  color: #333;
+}
+
+#game-container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #007bff;
+}
+
+#game-panel {
+  margin-top: 20px;
+}
+
+.info-box {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+#history {
+  margin: 20px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  height: 150px;
+  overflow-y: auto;
+  background: #f9f9f9;
+}
+
+#history ul {
+  list-style: none;
+  padding: 0;
+}
+
+#history li {
+  padding: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+input, button {
+  padding: 10px;
+  font-size: 16px;
+  margin: 5px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+button {
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+#error-message {
+  color: red;
+  font-size: 14px;
+}
+
+footer {
+  margin-top: 30px;
+  font-size: 14px;
+  color: #aaa;
+  text-align: center;
+}
