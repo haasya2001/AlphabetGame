@@ -4,139 +4,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alphabet Game</title>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
 </head>
 <body>
     <h1>Alphabet Game</h1>
-    
+
     <!-- Player Name Input -->
-    <div id="playerInput">
+    <div id="joinGame">
         <h3>Enter your name:</h3>
         <input type="text" id="playerName" placeholder="Enter Name" required>
         <button onclick="joinGame()">Join Game</button>
     </div>
 
-    <!-- Player Selection -->
-    <div id="playerSelection" style="display:none;">
-        <h3>Select Player (2 or 3 players allowed):</h3>
-        <button onclick="selectPlayer(1)">Player 1</button>
-        <button onclick="selectPlayer(2)">Player 2</button>
-        <button onclick="selectPlayer(3)">Player 3</button>
-    </div>
-
-    <!-- Random Letter Button -->
-    <button onclick="generateLetter()" id="generateButton" style="display:none;">Generate Random Letter</button>
-
-    <!-- Display the Letter and Game Instructions -->
-    <h3 id="letterDisplay" style="display:none;">Letter: </h3>
-    <div id="wordInput" style="display:none;">
-        <h4>Enter a word that starts with the letter:</h4>
-        <input type="text" id="wordInputField" placeholder="Enter word" required>
-        <button onclick="submitWord()">Submit Word</button>
-    </div>
-
-    <!-- Player Names Display -->
-    <div id="playerNames" style="display:none;">
-        <h4>Players:</h4>
+    <!-- Players List -->
+    <div id="players" style="display:none;">
+        <h3>Players:</h3>
         <ul id="playerList"></ul>
     </div>
 
-    <!-- History of Words -->
-    <div id="wordHistory" style="display:none;">
-        <h4>Word History:</h4>
-        <ul id="historyList"></ul>
+    <!-- Game Controls -->
+    <div id="gameControls" style="display:none;">
+        <button id="startGameButton" onclick="startGame()">Start Game</button>
     </div>
 
-    <!-- Game Status -->
-    <div id="gameStatus" style="display:none;">
-        <h4>Waiting for other players...</h4>
+    <!-- Game Display -->
+    <div id="gameDisplay" style="display:none;">
+        <h3>Current Letter: <span id="currentLetter"></span></h3>
+        <h4>Current Turn: Player <span id="currentTurn"></span></h4>
+
+        <!-- Word Submission -->
+        <div id="wordInput">
+            <input type="text" id="wordField" placeholder="Enter word" required>
+            <button onclick="submitWord()">Submit Word</button>
+        </div>
+
+        <!-- Word History -->
+        <div id="wordHistory">
+            <h4>Word History:</h4>
+            <ul id="historyList"></ul>
+        </div>
     </div>
 
     <script>
-        let currentPlayer = null;
-        let currentLetter = '';
-        let gameStarted = false;
-        let playerCount = 0;
-        let gameData = {
-            player1: '',
-            player2: '',
-            player3: ''
-        };
-        let wordHistory = [];
+        const socket = io();
+
+        let playerId = null;
 
         function joinGame() {
             const playerName = document.getElementById('playerName').value;
-            if (playerName === '') {
+            if (!playerName) {
                 alert('Please enter a name to join the game.');
                 return;
             }
 
-            document.getElementById('playerInput').style.display = 'none';
-            document.getElementById('playerSelection').style.display = 'block';
+            playerId = Object.keys(socket.io.opts.query).length + 1; // Assign ID
+            socket.emit('join_game', { player_id: playerId, player_name: playerName });
+
+            document.getElementById('joinGame').style.display = 'none';
         }
 
-        function selectPlayer(player) {
-            if (playerCount >= 3) {
-                alert("Only 3 players are allowed.");
-                return;
-            }
-
-            playerCount++;
-            gameData[`player${player}`] = document.getElementById('playerName').value;
-            updatePlayerNames();
-
-            if (playerCount === 3) {
-                document.getElementById('playerSelection').style.display = 'none';
-                document.getElementById('generateButton').style.display = 'inline-block';
-            }
-        }
-
-        function updatePlayerNames() {
+        socket.on('update_players', (players) => {
             const playerList = document.getElementById('playerList');
             playerList.innerHTML = '';
-            for (let i = 1; i <= playerCount; i++) {
+
+            for (let id in players) {
                 const listItem = document.createElement('li');
-                listItem.textContent = `Player ${i}: ${gameData[`player${i}`]}`;
+                listItem.textContent = `Player ${id}: ${players[id]}`;
                 playerList.appendChild(listItem);
             }
 
-            document.getElementById('playerNames').style.display = 'block';
+            document.getElementById('players').style.display = 'block';
+
+            // Show Start Button if Player 1
+            if (playerId === 1) {
+                document.getElementById('gameControls').style.display = 'block';
+            }
+        });
+
+        function startGame() {
+            socket.emit('start_game');
         }
 
-        function generateLetter() {
-            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            currentLetter = letters.charAt(Math.floor(Math.random() * letters.length));
-            document.getElementById('letterDisplay').textContent = 'Letter: ' + currentLetter;
-            document.getElementById('letterDisplay').style.display = 'block';
-            document.getElementById('wordInput').style.display = 'block';
-            document.getElementById('gameStatus').style.display = 'block';
-            document.getElementById('wordHistory').style.display = 'block';
-            document.getElementById('gameStatus').textContent = 'It\'s Player 1\'s turn!';
-            currentPlayer = 1; // Player 1 starts
-        }
+        socket.on('game_started', (data) => {
+            document.getElementById('currentLetter').textContent = data.current_letter;
+            document.getElementById('currentTurn').textContent = data.current_player;
+
+            document.getElementById('gameControls').style.display = 'none';
+            document.getElementById('gameDisplay').style.display = 'block';
+        });
 
         function submitWord() {
-            const word = document.getElementById('wordInputField').value;
-            if (word.toUpperCase().startsWith(currentLetter)) {
-                wordHistory.push(`${gameData[`player${currentPlayer}`]}: ${word}`);
-                updateWordHistory();
-
-                document.getElementById('wordInputField').value = '';
-                currentPlayer = (currentPlayer % playerCount) + 1; // Switch between players
-                document.getElementById('gameStatus').textContent = `It's Player ${currentPlayer}'s turn.`;
-            } else {
-                alert(`Please enter a word starting with the letter ${currentLetter}.`);
-            }
+            const word = document.getElementById('wordField').value;
+            socket.emit('submit_word', { player_id: playerId, word: word });
         }
 
-        function updateWordHistory() {
+        socket.on('update_game', (data) => {
+            document.getElementById('currentLetter').textContent = data.current_letter;
+            document.getElementById('currentTurn').textContent = data.current_player;
+
             const historyList = document.getElementById('historyList');
             historyList.innerHTML = '';
-            wordHistory.forEach(word => {
+
+            data.word_history.forEach(word => {
                 const listItem = document.createElement('li');
                 listItem.textContent = word;
                 historyList.appendChild(listItem);
             });
-        }
+        });
+
+        socket.on('invalid_word', (data) => {
+            alert(data.message);
+        });
     </script>
 </body>
 </html>
