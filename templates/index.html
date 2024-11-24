@@ -1,33 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Word Chain Game</title>
-  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-  <link rel="stylesheet" href="/static/styles.css">
+    <title>Player Selection Game</title>
 </head>
 <body>
-  <div id="game-container">
-    <h1>Word Chain Game</h1>
-    <div id="game-panel">
-      <div class="info-box">
-        <strong>Current Letter:</strong> <span id="current-letter">-</span>
-      </div>
-      <div id="history">
-        <strong>Word History:</strong>
-        <ul id="word-list"></ul>
-      </div>
-      <input id="word-input" type="text" placeholder="Enter your word" />
-      <button id="submit-word">Submit Word</button>
-      <button id="generate-letter">Generate Random Letter</button>
-      <p id="error-message"></p>
-    </div>
-  </div>
-  <footer>
-    <p>Word Chain Game &copy; 2024</p>
-  </footer>
+    <h1>Select a Player</h1>
+    <button onclick="selectPlayer('Player1')">Player1</button>
+    <button onclick="selectPlayer('Player2')">Player2</button>
+    <div id="response"></div>
+    <button onclick="generateLetter()" id="generate-btn" disabled>Generate Letter</button>
+    <h2 id="letter-display"></h2>
 
-  <script src="/static/app.js"></script>
+    <script>
+        let currentPlayer = null;
+
+        function selectPlayer(player) {
+            fetch('/select_player', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player: player })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('response').innerText = data.message;
+                currentPlayer = player;
+                document.getElementById('generate-btn').disabled = player !== "Player1";
+            });
+        }
+
+        function generateLetter() {
+            fetch('/generate_letter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player: currentPlayer })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => { throw new Error(data.error); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('letter-display').innerText = `Random Letter: ${data.letter}`;
+            })
+            .catch(error => {
+                alert(error.message);
+            });
+        }
+    </script>
 </body>
 </html>
